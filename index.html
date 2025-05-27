@@ -1,20 +1,87 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+          content="width=device-width, initial-scale=1.0">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>Tims moker jammie dingen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Tim's moker jammie dingen</title>
 </head>
-<body>
-    <div id="app">
-            {{ message }}
+<body class="bg-gray-100 text-gray-800">
+<div id="app" class="p-6">
+    <h1 class="text-3xl font-bold mb-6 text-center">Tim moker jammie dingen</h1>
+
+    <!-- Search + Filter -->
+    <div class="mb-6 flex flex-col md:flex-row items-start md:items-center gap-4">
+        <input v-model="search" type="text" placeholder="Search products..."
+               class="flex-1 px-4 py-2 rounded-full w-full border border-gray-300 shadow-sm focus:ring focus:ring-blue-200">
+
+        <div class="flex flex-wrap gap-2">
+            <button
+                    @click="toggleSort"
+                    class="px-4 py-1 rounded-full text-sm border bg-white text-gray-700 border-gray-300 hover:bg-gray-100">
+                Sort by price:
+                <span class="font-semibold">
+                    {{ sortOrder === 'asc' ? 'Low → High' : sortOrder === 'desc' ? 'High → Low' : 'Default' }}
+                </span>
+            </button>
+
+            <button
+                    @click="activeCategory = null"
+                    :class="['px-4 py-1 rounded-full text-sm border', activeCategory === null ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border-gray-300']">
+                All
+            </button>
+            <button
+                    v-for="cat in categories" :key="cat"
+                    @click="activeCategory = cat"
+                    :class="['px-4 py-1 rounded-full text-sm border', activeCategory === cat ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border-gray-300']">
+                {{ cat }}
+            </button>
+        </div>
     </div>
-</body>
-</html>
+
+    <!-- Product Grid -->
+    <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div
+                v-for="product in filteredProducts" :key="product.name"
+                @click="openProduct(product)"
+                class="bg-white rounded-2xl shadow hover:shadow-lg transition cursor-pointer overflow-hidden">
+
+            <img :src="product.image" :alt="product.name" class="w-full h-48 object-cover">
+
+            <div class="p-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-semibold">{{ product.name }}</h2>
+                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{{ product.category }}</span>
+                </div>
+                <p class="text-gray-500 text-sm mt-1">{{ product.description.slice(0, 60) }}...</p>
+                <p class="text-green-600 font-bold mt-2">${{ product.price.toFixed(2) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div v-if="selectedProduct" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-lg max-w-lg w-full relative overflow-hidden">
+            <button @click="selectedProduct = null"
+                    class="absolute top-2 right-2 text-gray-500 hover:text-red-500 text-2xl">&times;</button>
+            <img :src="selectedProduct.image" class="w-full h-64 object-cover rounded-t-xl">
+            <div class="p-6">
+                <h2 class="text-2xl font-bold mb-2">{{ selectedProduct.name }}</h2>
+                <p class="text-gray-600 mb-2"><strong>Category:</strong> {{ selectedProduct.category }}</p>
+                <p class="text-gray-700 mb-4">{{ selectedProduct.description }}</p>
+                <p class="text-green-600 font-semibold text-lg mb-4" v-if="typeof selectedProduct.price === 'number'">
+                    ${{ selectedProduct.price.toFixed(2) }}
+                </p>
+                <a :href="selectedProduct.link" target="_blank" rel="noopener"
+                   class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Naar pagina
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     const { createApp } = Vue
@@ -22,8 +89,104 @@
     createApp({
         data() {
             return {
-                message: 'Hello Vue!'
+                search: '',
+                activeCategory: null,
+                selectedProduct: null,
+                sortOrder: null,
+                products: [
+                    {
+                        name: "Werkbank met kastjes",
+                        category: "Gereedschap",
+                        price: 249.99,
+                        description: "Jammie voor gereedschap in de kelder. Moet deze zijn want deze past.",
+                        image: "https://a.storyblok.com/f/255106/4ac21b464c/88cd6d1ba7b46affb1226ec80d6fd5009b85e42e_10325_1.jpg/m/1080x0/filters:quality(80)",
+                        link: "https://www.hbm-machines.com/nl/p/hbm-115-cm-werkbank-met-houten-werkblad-achterwand-met-kastenwand-led-verlichting-stekkerdoos-e"
+                    },
+                    {
+                        name: "Schoefboormachine",
+                        category: "Gereedschap",
+                        price: 60,
+                        description: "Wil ik wel graag hebben. Hoeft niet heel cool gewoon gaatjes in de muur",
+                        image: "https://www.test-aankoop.be/-/media/ta/images/home/living%20energy/do-it-yourself/comment-choisir/snoerloze-schroefboormachines-n701703/boormachine_000081777135_double.jpg?rev=b7fffc6c-8f03-4a67-bb34-b2d694db87f7&la=nl-BE&h=270&mw=480&w=480&hash=AD3BB3C0F6B4707CE391F184BF9263E0",
+                        link: "https://www.gamma.nl/"
+                    },
+                    {
+                        name: "Fiets standaard",
+                        category: "Fietsings",
+                        price: 39.99,
+                        description: "",
+                        image: "https://contents.mediadecathlon.com/p2798640/k$e12bc0c6be7bef784b3ea77f91b13c1f/picture.jpg?format=auto&f=969x0",
+                        link: "https://www.decathlon.nl/p/opvouwbare-montagestandaard-voor-fiets-easywork-iii/_/R-p-X8954850"
+                    },
+                    {
+                        name: "Herman Miller",
+                        category: "Bureau",
+                        price: 999.99,
+                        description: "Jammie jammie jam. veel te duur",
+                        image: "https://www.futureproofedshop.com/media/catalog/product/cache/e72c689148ec623440cf34a67063c2c6/h/e/herman_miller_aeron_sfeer_1.jpg",
+                        link: "https://offeco.nl/Bureaustoelen/merken/herman-miller/"
+                    },
+                    {
+                        name: "Overig jammie gereedschap",
+                        category: "Gereedschap",
+                        price: 999.99,
+                        description: "Goeie tangen of zo. Gewoon iets wat je leven lang mee gaat.",
+                        image: "https://bouwmarkt.nl/wp-content/uploads/2023/03/cesar-carlevarino-aragon-NL_DF0Klepc-unsplash-2240x1260.jpg",
+                        link: "https://www.gamma.nl/"
+                    },
+                    {
+                        name: "Epische muismat",
+                        category: "Bureau",
+                        price: 40,
+                        description: "Gewoon een monsterlijke muismat. zo'n lange met leuk patroon of iets er op. mag heel gek zijn",
+                        image: "https://modernelegance-store.myshopify.com/cdn/shop/files/S3ad9f123eb6d4c098c88b61f5930a75aw.webp?v=1701649887",
+                        link: "https://themousepadcompany.com/"
+                    },
+                    {
+                        name: "Bakje",
+                        category: "Gitaar",
+                        price: 40,
+                        description: "Elk bakje is prima, dit is een voorbeeld van die ik ooit wil maar hoeft absoluut niet deze te zijn. veel goedkoper is ook prima.",
+                        image: "https://thumbs.static-thomann.de/thumb/padthumb600x600/pics/bdb/_10/103975/7536063_800.jpg",
+                        link: "https://www.thomann.nl/boss_sd1_super_overdrive.htm"
+                    },
+                ]
             }
+        },
+        computed: {
+            categories() {
+                return [...new Set(this.products.map(p => p.category))]
+            },
+            filteredProducts() {
+                let filtered = this.products.filter(p => {
+                    const matchesSearch = p.name.toLowerCase().includes(this.search.toLowerCase())
+                    const matchesCategory = this.activeCategory ? p.category === this.activeCategory : true
+                    return matchesSearch && matchesCategory
+                })
+
+                if (this.sortOrder) {
+                    filtered = filtered.slice().sort((a, b) => {
+                        const aPrice = typeof a.price === 'number' ? a.price : Infinity
+                        const bPrice = typeof b.price === 'number' ? b.price : Infinity
+                        return this.sortOrder === 'asc' ? aPrice - bPrice : bPrice - aPrice
+                    })
+                }
+
+                return filtered
+            }
+        },
+        methods: {
+            openProduct(product) {
+                this.selectedProduct = product;
+            },
+            toggleSort() {
+                if (this.sortOrder === null) this.sortOrder = 'asc'
+                else if (this.sortOrder === 'asc') this.sortOrder = 'desc'
+                else this.sortOrder = null
+            }
+
         }
     }).mount('#app')
 </script>
+</body>
+</html>
